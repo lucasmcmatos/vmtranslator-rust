@@ -173,7 +173,7 @@ M=M-1
 A=M
 D=M
 A=A-1
-M=M+D
+M=D+M
 // push argument 1
 @1
 D=A
@@ -220,7 +220,7 @@ M=M-1
 A=M
 D=M
 A=A-1
-M=M+D
+M=D+M
 // sub
 @SP
 M=M-1
@@ -242,4 +242,4 @@ M=M-1
 A=M
 D=M
 A=A-1
-M=M+D
+M=D+M

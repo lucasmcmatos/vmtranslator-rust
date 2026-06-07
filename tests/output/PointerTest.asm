@@ -94,7 +94,7 @@ M=M-1
 A=M
 D=M
 A=A-1
-M=M+D
+M=D+M
 // push this 2
 @2
 D=A
@@ -130,4 +130,4 @@ M=M-1
 A=M
 D=M
 A=A-1
-M=M+D
+M=D+M
