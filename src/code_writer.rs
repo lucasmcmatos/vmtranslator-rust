@@ -18,10 +18,10 @@ impl CodeWriter {
     pub fn write_arithmetic(&mut self, command: &str) {
         self.output.push(format!("// {}", command));
         match command {
-            "add" => self.write_binary_op("M=M+D"),
+            "add" => self.write_binary_op("M=D+M"),
             "sub" => self.write_binary_op("M=M-D"),
-            "and" => self.write_binary_op("M=M&D"),
-            "or"  => self.write_binary_op("M=M|D"),
+            "and" => self.write_binary_op("M=D&M"),
+            "or"  => self.write_binary_op("M=D|M"),
             "neg" => self.write_unary_op("M=-M"),
             "not" => self.write_unary_op("M=!M"),
             "eq"  => self.write_comparison("JEQ"),
