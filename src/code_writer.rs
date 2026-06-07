@@ -42,6 +42,8 @@ impl CodeWriter {
                     "this"                 => self.write_push_segment("THIS", index),
                     "that"                 => self.write_push_segment("THAT", index),
                     "temp"                 => self.write_push_temp(index),
+                    "pointer"              => self.write_push_pointer(index),
+                    "static"               => self.write_push_static(index),
                     _ => panic!("unsupported push segment: {}", segment),
                 }
             }
@@ -53,6 +55,8 @@ impl CodeWriter {
                     "this"                 => self.write_pop_segment("THIS", index),
                     "that"                 => self.write_pop_segment("THAT", index),
                     "temp"                 => self.write_pop_temp(index),
+                    "pointer"              => self.write_pop_pointer(index),
+                    "static"               => self.write_pop_static(index),
                     _ => panic!("unsupported pop segment: {}", segment),
                 }
             }
@@ -164,6 +168,56 @@ impl CodeWriter {
             "M=D",
             "@SP",
             "M=M+1",
+        ]);
+    }
+
+    fn write_push_static(&mut self, index: u16) {
+        let label = format!("{}.{}", self.file_name, index);
+        self.emit(&[
+            &format!("@{}", label),
+            "D=M",
+            "@SP",
+            "A=M",
+            "M=D",
+            "@SP",
+            "M=M+1",
+        ]);
+    }
+
+    fn write_pop_static(&mut self, index: u16) {
+        let label = format!("{}.{}", self.file_name, index);
+        self.emit(&[
+            "@SP",
+            "M=M-1",
+            "A=M",
+            "D=M",
+            &format!("@{}", label),
+            "M=D",
+        ]);
+    }
+
+    fn write_push_pointer(&mut self, index: u16) {
+        let reg = if index == 0 { "THIS" } else { "THAT" };
+        self.emit(&[
+            &format!("@{}", reg),
+            "D=M",
+            "@SP",
+            "A=M",
+            "M=D",
+            "@SP",
+            "M=M+1",
+        ]);
+    }
+
+    fn write_pop_pointer(&mut self, index: u16) {
+        let reg = if index == 0 { "THIS" } else { "THAT" };
+        self.emit(&[
+            "@SP",
+            "M=M-1",
+            "A=M",
+            "D=M",
+            &format!("@{}", reg),
+            "M=D",
         ]);
     }
 
