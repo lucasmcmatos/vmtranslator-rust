@@ -37,7 +37,12 @@ fn main() {
         parser.advance();
     }
 
-    let output_path = input_path.with_extension("asm");
+    let input_dir = input_path.parent().unwrap_or(Path::new("."));
+    let output_dir = input_dir.join("output");
+    fs::create_dir_all(&output_dir)
+        .unwrap_or_else(|e| { eprintln!("Error creating output dir: {}", e); std::process::exit(1); });
+
+    let output_path = output_dir.join(file_name).with_extension("asm");
     let output = writer.output().join("\n") + "\n";
     fs::write(&output_path, output)
         .unwrap_or_else(|e| { eprintln!("Error writing file: {}", e); std::process::exit(1); });
