@@ -29,16 +29,16 @@ fn main() {
     while parser.has_more_commands() {
         let cmd = parser.current_command();
         match cmd.command_type {
-            parser::CommandType::CArithmetic => writer.write_arithmetic(&cmd.arg1.clone()),
+            parser::CommandType::CArithmetic => writer.write_arithmetic(&cmd.arg1),
             parser::CommandType::CPush | parser::CommandType::CPop => {
-                writer.write_push_pop(&cmd.command_type, &cmd.arg1.clone(), cmd.arg2.unwrap());
+                writer.write_push_pop(&cmd.command_type, &cmd.arg1, cmd.arg2.unwrap());
             }
         }
         parser.advance();
     }
 
     let output_path = input_path.with_extension("asm");
-    let output = writer.output().join("\n");
+    let output = writer.output().join("\n") + "\n";
     fs::write(&output_path, output)
         .unwrap_or_else(|e| { eprintln!("Error writing file: {}", e); std::process::exit(1); });
 

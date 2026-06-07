@@ -196,8 +196,12 @@ impl CodeWriter {
         ]);
     }
 
+    fn pointer_reg(index: u16) -> &'static str {
+        if index == 0 { "THIS" } else { "THAT" }
+    }
+
     fn write_push_pointer(&mut self, index: u16) {
-        let reg = if index == 0 { "THIS" } else { "THAT" };
+        let reg = Self::pointer_reg(index);
         self.emit(&[
             &format!("@{}", reg),
             "D=M",
@@ -210,7 +214,7 @@ impl CodeWriter {
     }
 
     fn write_pop_pointer(&mut self, index: u16) {
-        let reg = if index == 0 { "THIS" } else { "THAT" };
+        let reg = Self::pointer_reg(index);
         self.emit(&[
             "@SP",
             "M=M-1",
