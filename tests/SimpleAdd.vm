@@ -1,0 +1,4 @@
+// Executes pop and add operation.
+push constant 7
+push constant 8
+add
