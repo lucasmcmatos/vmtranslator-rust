@@ -2,6 +2,12 @@ pub enum CommandType {
     CArithmetic,
     CPush,
     CPop,
+    CLabel,
+    CGoto,
+    CIf,
+    CFunction,
+    CCall,
+    CReturn,
 }
 
 pub struct Command {
@@ -55,6 +61,36 @@ impl Parser {
                 command_type: CommandType::CPop,
                 arg1: parts[1].to_string(),
                 arg2: Some(parts[2].parse().expect("pop index must be a number")),
+            },
+            "label" => Command {
+                command_type: CommandType::CLabel,
+                arg1: parts[1].to_string(),
+                arg2: None,
+            },
+            "goto" => Command {
+                command_type: CommandType::CGoto,
+                arg1: parts[1].to_string(),
+                arg2: None,
+            },
+            "if-goto" => Command {
+                command_type: CommandType::CIf,
+                arg1: parts[1].to_string(),
+                arg2: None,
+            },
+            "function" => Command {
+                command_type: CommandType::CFunction,
+                arg1: parts[1].to_string(),
+                arg2: Some(parts[2].parse().expect("function nLocals must be a number")),
+            },
+            "call" => Command {
+                command_type: CommandType::CCall,
+                arg1: parts[1].to_string(),
+                arg2: Some(parts[2].parse().expect("call nArgs must be a number")),
+            },
+            "return" => Command {
+                command_type: CommandType::CReturn,
+                arg1: String::new(),
+                arg2: None,
             },
             cmd => Command {
                 command_type: CommandType::CArithmetic,

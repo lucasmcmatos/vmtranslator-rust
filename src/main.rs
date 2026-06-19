@@ -33,6 +33,7 @@ fn main() {
             parser::CommandType::CPush | parser::CommandType::CPop => {
                 writer.write_push_pop(&cmd.command_type, &cmd.arg1, cmd.arg2.unwrap());
             }
+            _ => todo!("control flow / function commands not yet implemented"),
         }
         parser.advance();
     }

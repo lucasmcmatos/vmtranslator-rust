@@ -61,6 +61,7 @@ impl CodeWriter {
                 }
             }
             CommandType::CArithmetic => unreachable!(),
+            _ => todo!("control flow / function commands not yet implemented"),
         }
     }
 
