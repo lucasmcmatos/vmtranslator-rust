@@ -162,4 +162,64 @@ mod tests {
         parser.advance();
         assert!(!parser.has_more_commands());
     }
+
+    #[test]
+    fn test_label_classified() {
+        let source = "label LOOP_START";
+        let parser = Parser::new(source);
+        let cmd = &parser.commands[0];
+        assert!(matches!(cmd.command_type, CommandType::CLabel));
+        assert_eq!(cmd.arg1, "LOOP_START");
+        assert!(cmd.arg2.is_none());
+    }
+
+    #[test]
+    fn test_goto_classified() {
+        let source = "goto LOOP_START";
+        let parser = Parser::new(source);
+        let cmd = &parser.commands[0];
+        assert!(matches!(cmd.command_type, CommandType::CGoto));
+        assert_eq!(cmd.arg1, "LOOP_START");
+        assert!(cmd.arg2.is_none());
+    }
+
+    #[test]
+    fn test_if_goto_classified() {
+        let source = "if-goto LOOP_START";
+        let parser = Parser::new(source);
+        let cmd = &parser.commands[0];
+        assert!(matches!(cmd.command_type, CommandType::CIf));
+        assert_eq!(cmd.arg1, "LOOP_START");
+        assert!(cmd.arg2.is_none());
+    }
+
+    #[test]
+    fn test_function_classified() {
+        let source = "function Main.main 3";
+        let parser = Parser::new(source);
+        let cmd = &parser.commands[0];
+        assert!(matches!(cmd.command_type, CommandType::CFunction));
+        assert_eq!(cmd.arg1, "Main.main");
+        assert_eq!(cmd.arg2, Some(3));
+    }
+
+    #[test]
+    fn test_call_classified() {
+        let source = "call Math.multiply 2";
+        let parser = Parser::new(source);
+        let cmd = &parser.commands[0];
+        assert!(matches!(cmd.command_type, CommandType::CCall));
+        assert_eq!(cmd.arg1, "Math.multiply");
+        assert_eq!(cmd.arg2, Some(2));
+    }
+
+    #[test]
+    fn test_return_classified() {
+        let source = "return";
+        let parser = Parser::new(source);
+        let cmd = &parser.commands[0];
+        assert!(matches!(cmd.command_type, CommandType::CReturn));
+        assert!(cmd.arg1.is_empty());
+        assert!(cmd.arg2.is_none());
+    }
 }
