@@ -23,6 +23,19 @@ impl CodeWriter {
         self.file_name = name.to_string();
     }
 
+    pub fn write_bootstrap(&mut self) {
+        self.output.push("// Bootstrap code".to_string());
+        // SP = 256
+        self.emit(&[
+            "@256",
+            "D=A",
+            "@SP",
+            "M=D",
+        ]);
+        // call Sys.init 0
+        self.write_call("Sys.init", 0);
+    }
+
     pub fn write_label(&mut self, label: &str) {
         self.output.push(format!("// label {}", label));
         let scoped = self.scoped_label(label);
@@ -455,6 +468,41 @@ mod tests {
         let out = asm(&cw);
         assert!(out.contains(&"@Main.main$LOOP"));
         assert!(out.contains(&"0;JMP"));
+    }
+
+    #[test]
+    fn test_bootstrap_sets_sp_to_256() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_bootstrap();
+        let asm_str = cw.output().join("\n");
+        assert!(asm_str.contains("@256\nD=A\n@SP\nM=D"));
+    }
+
+    #[test]
+    fn test_bootstrap_calls_sys_init() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_bootstrap();
+        let asm_str = cw.output().join("\n");
+        assert!(asm_str.contains("@Sys.init\n0;JMP"));
+    }
+
+    #[test]
+    fn test_bootstrap_plants_return_label() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_bootstrap();
+        let out = asm(&cw);
+        assert!(out.contains(&"(Sys.init$ret.0)"));
+    }
+
+    #[test]
+    fn test_bootstrap_comes_before_other_output() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_bootstrap();
+        cw.write_function("Main.main", 0);
+        let asm_str = cw.output().join("\n");
+        let bootstrap_pos = asm_str.find("@256").unwrap();
+        let function_pos = asm_str.find("(Main.main)").unwrap();
+        assert!(bootstrap_pos < function_pos);
     }
 
     #[test]
