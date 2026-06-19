@@ -33,7 +33,12 @@ fn main() {
             parser::CommandType::CPush | parser::CommandType::CPop => {
                 writer.write_push_pop(&cmd.command_type, &cmd.arg1, cmd.arg2.unwrap());
             }
-            _ => todo!("control flow / function commands not yet implemented"),
+            parser::CommandType::CLabel    => writer.write_label(&cmd.arg1),
+            parser::CommandType::CGoto     => writer.write_goto(&cmd.arg1),
+            parser::CommandType::CIf       => writer.write_if(&cmd.arg1),
+            parser::CommandType::CFunction => writer.write_function(&cmd.arg1, cmd.arg2.unwrap()),
+            parser::CommandType::CCall     => writer.write_call(&cmd.arg1, cmd.arg2.unwrap()),
+            parser::CommandType::CReturn   => writer.write_return(),
         }
         parser.advance();
     }

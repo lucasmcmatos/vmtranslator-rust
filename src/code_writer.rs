@@ -4,6 +4,8 @@ pub struct CodeWriter {
     output: Vec<String>,
     file_name: String,
     label_counter: u32,
+    current_function: String,
+    return_counter: u32,
 }
 
 impl CodeWriter {
@@ -12,7 +14,37 @@ impl CodeWriter {
             output: Vec::new(),
             file_name: file_name.to_string(),
             label_counter: 0,
+            current_function: String::new(),
+            return_counter: 0,
         }
+    }
+
+    pub fn set_file_name(&mut self, name: &str) {
+        self.file_name = name.to_string();
+    }
+
+    pub fn write_label(&mut self, label: &str) {
+        todo!("write_label not yet implemented")
+    }
+
+    pub fn write_goto(&mut self, label: &str) {
+        todo!("write_goto not yet implemented")
+    }
+
+    pub fn write_if(&mut self, label: &str) {
+        todo!("write_if not yet implemented")
+    }
+
+    pub fn write_function(&mut self, name: &str, n_locals: u16) {
+        todo!("write_function not yet implemented")
+    }
+
+    pub fn write_call(&mut self, name: &str, n_args: u16) {
+        todo!("write_call not yet implemented")
+    }
+
+    pub fn write_return(&mut self) {
+        todo!("write_return not yet implemented")
     }
 
     pub fn write_arithmetic(&mut self, command: &str) {
@@ -61,7 +93,7 @@ impl CodeWriter {
                 }
             }
             CommandType::CArithmetic => unreachable!(),
-            _ => todo!("control flow / function commands not yet implemented"),
+            _ => unreachable!(),
         }
     }
 
