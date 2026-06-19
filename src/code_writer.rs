@@ -125,7 +125,64 @@ impl CodeWriter {
     }
 
     pub fn write_return(&mut self) {
-        todo!("write_return not yet implemented")
+        self.output.push("// return".to_string());
+
+        // endFrame = LCL → R14
+        self.emit(&[
+            "@LCL",
+            "D=M",
+            "@R14",
+            "M=D",
+        ]);
+
+        // retAddr = *(endFrame - 5) → R15  (must be saved before the stack is touched)
+        self.emit(&[
+            "@R14",
+            "D=M",
+            "@5",
+            "A=D-A",
+            "D=M",
+            "@R15",
+            "M=D",
+        ]);
+
+        // *ARG = pop()  (place return value where caller expects it)
+        self.emit(&[
+            "@SP",
+            "AM=M-1",
+            "D=M",
+            "@ARG",
+            "A=M",
+            "M=D",
+        ]);
+
+        // SP = ARG + 1
+        self.emit(&[
+            "@ARG",
+            "D=M+1",
+            "@SP",
+            "M=D",
+        ]);
+
+        // Restore THAT, THIS, ARG, LCL from saved endFrame
+        for (offset, reg) in [(1, "THAT"), (2, "THIS"), (3, "ARG"), (4, "LCL")] {
+            self.emit(&[
+                "@R14",
+                "D=M",
+                &format!("@{}", offset),
+                "A=D-A",
+                "D=M",
+                &format!("@{}", reg),
+                "M=D",
+            ]);
+        }
+
+        // goto retAddr
+        self.emit(&[
+            "@R15",
+            "A=M",
+            "0;JMP",
+        ]);
     }
 
     pub fn write_arithmetic(&mut self, command: &str) {
@@ -398,6 +455,61 @@ mod tests {
         let out = asm(&cw);
         assert!(out.contains(&"@Main.main$LOOP"));
         assert!(out.contains(&"0;JMP"));
+    }
+
+    #[test]
+    fn test_write_return_saves_end_frame() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_return();
+        let asm_str = cw.output().join("\n");
+        // endFrame = LCL stored in R14
+        assert!(asm_str.contains("@LCL\nD=M\n@R14\nM=D"));
+    }
+
+    #[test]
+    fn test_write_return_saves_ret_addr() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_return();
+        let asm_str = cw.output().join("\n");
+        // retAddr = *(endFrame - 5) stored in R15
+        assert!(asm_str.contains("@R14\nD=M\n@5\nA=D-A\nD=M\n@R15\nM=D"));
+    }
+
+    #[test]
+    fn test_write_return_places_return_value() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_return();
+        let asm_str = cw.output().join("\n");
+        // *ARG = pop()
+        assert!(asm_str.contains("@SP\nAM=M-1\nD=M\n@ARG\nA=M\nM=D"));
+    }
+
+    #[test]
+    fn test_write_return_restores_sp() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_return();
+        let asm_str = cw.output().join("\n");
+        // SP = ARG + 1
+        assert!(asm_str.contains("@ARG\nD=M+1\n@SP\nM=D"));
+    }
+
+    #[test]
+    fn test_write_return_restores_caller_registers() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_return();
+        let asm_str = cw.output().join("\n");
+        assert!(asm_str.contains("@THAT\nM=D"));
+        assert!(asm_str.contains("@THIS\nM=D"));
+        assert!(asm_str.contains("@ARG\nM=D"));
+        assert!(asm_str.contains("@LCL\nM=D"));
+    }
+
+    #[test]
+    fn test_write_return_jumps_to_ret_addr() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_return();
+        let asm_str = cw.output().join("\n");
+        assert!(asm_str.contains("@R15\nA=M\n0;JMP"));
     }
 
     #[test]
