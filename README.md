@@ -1,4 +1,4 @@
-# VMTranslator — Nand2Tetris Project 07 (Parte 1)
+# VMTranslator — Nand2Tetris Projetos 07 e 08
 
 Tradutor de código VM (linguagem intermediária) para Assembly Hack, implementado como parte da disciplina de Compiladores.
 
@@ -17,7 +17,7 @@ Tradutor de código VM (linguagem intermediária) para Assembly Hack, implementa
 - **Rust** — versão `1.95.0`
 - Sem dependências externas (apenas `std`)
 
-**Por que Rust?** Segurança de memória em tempo de compilação, tipagem forte com `enum` e `match` exaustivo — ideal para modelar os tipos de comando VM e garantir que todos os segmentos sejam tratados corretamente.
+**Por que Rust?** Segurança de memória em tempo de compilação, tipagem forte com `enum` e `match` exaustivo — ideal para modelar os tipos de comando VM e garantir que todos os segmentos e comandos sejam tratados corretamente.
 
 ---
 
@@ -26,16 +26,12 @@ Tradutor de código VM (linguagem intermediária) para Assembly Hack, implementa
 ```
 vmtranslator-rust/
 ├── src/
-│   ├── main.rs          # Orquestrador: CLI → Parser → CodeWriter → .asm
-│   ├── parser.rs        # Leitura, remoção de comentários e tokenização do .vm
+│   ├── main.rs          # CLI: aceita arquivo .vm ou diretório
+│   ├── parser.rs        # Leitura, remoção de comentários e tokenização
 │   └── code_writer.rs   # Geração de instruções Hack Assembly
 ├── tests/
-│   ├── SimpleAdd.vm
-│   ├── StackTest.vm
-│   ├── BasicTest.vm
-│   ├── PointerTest.vm
-│   ├── StaticTest.vm
-│   └── output/          # Arquivos .asm gerados
+│   ├── *.vm             # Arquivos de teste da Parte 1
+│   └── output/          # Arquivos .asm gerados (arquivo único)
 ├── translate_all.sh     # Script para traduzir todos os .vm de uma vez
 └── Cargo.toml
 ```
@@ -54,60 +50,128 @@ O binário gerado fica em `target/release/vmtranslator-rust`.
 
 ## Como Executar
 
-### Arquivo único
+### Arquivo único (Parte 1)
 
 ```bash
 cargo run -- <caminho/para/arquivo.vm>
 ```
 
-O arquivo `.asm` é gerado em `output/` dentro do mesmo diretório do `.vm`.
-
-**Exemplo:**
+O arquivo `.asm` é gerado em `output/` dentro do mesmo diretório do `.vm`. Bootstrap **não** é emitido.
 
 ```bash
 cargo run -- tests/SimpleAdd.vm
 # Gera: tests/output/SimpleAdd.asm
 ```
 
-### Todos os arquivos de teste de uma vez
+### Diretório (Parte 2)
 
 ```bash
-./translate_all.sh
+cargo run -- <caminho/para/diretório/>
+```
+
+Todos os `.vm` do diretório são traduzidos em um único `.asm`, gerado **dentro do próprio diretório**. Bootstrap (`SP = 256` + `call Sys.init 0`) é emitido automaticamente.
+
+```bash
+cargo run -- projects/08/FunctionCalls/NestedCall/
+# Gera: projects/08/FunctionCalls/NestedCall/NestedCall.asm
 ```
 
 ---
 
-## Testes
+## Funcionalidades Implementadas
 
-### Testes unitários do parser
+### Parte 1 — Comandos de Memória e Aritmética
+
+| Categoria | Comandos |
+|-----------|----------|
+| Aritmética | `add`, `sub`, `neg`, `eq`, `gt`, `lt`, `and`, `or`, `not` |
+| Memória (push/pop) | `constant`, `local`, `argument`, `this`, `that`, `temp`, `pointer`, `static` |
+
+### Parte 2 — Controle de Fluxo e Sub-rotinas
+
+| Categoria | Comandos | Descrição |
+|-----------|----------|-----------|
+| Controle de fluxo | `label`, `goto`, `if-goto` | Rótulos com escopo `função$label` |
+| Sub-rotinas | `function`, `call`, `return` | Convenção de chamada completa com frame |
+| Bootstrap | automático | `SP = 256` + `call Sys.init 0` no modo diretório |
+
+---
+
+## Testes Unitários
 
 ```bash
 cargo test
 ```
 
-### Validação no CPU Emulator (Nand2Tetris)
-
-1. Gere o `.asm` com `cargo run -- <arquivo.vm>`
-2. Copie o `.asm` gerado para o mesmo diretório do `.tst` correspondente
-3. Abra o **CPUEmulator** do Nand2Tetris
-4. Carregue o script `.tst` e execute
-5. Resultado esperado: `Comparison ended successfully`
+37 testes cobrindo parser, geração de código de controle de fluxo, bootstrap, `call` e `return`.
 
 ---
 
-## Segmentos Suportados
+## Validação no CPU Emulator (Nand2Tetris)
 
-| Segmento   | Endereço base |
-|------------|---------------|
-| `constant` | valor literal |
-| `local`    | `LCL` (RAM[1]) |
-| `argument` | `ARG` (RAM[2]) |
-| `this`     | `THIS` (RAM[3]) |
-| `that`     | `THAT` (RAM[4]) |
-| `temp`     | `RAM[5]`–`RAM[12]` |
-| `pointer`  | `THIS` ou `THAT` |
-| `static`   | `@FileName.i` |
+### Pré-requisito
 
-## Operações Suportadas
+Baixe o pacote do Nand2Tetris e localize `projects/08/`.
 
-`add`, `sub`, `neg`, `eq`, `gt`, `lt`, `and`, `or`, `not`
+### Ordem recomendada de testes
+
+| Diretório | Foco | Comando |
+|-----------|------|---------|
+| `ProgramFlow/BasicLoop/` | `label`, `goto`, `if-goto` | `cargo run -- .../BasicLoop/` |
+| `ProgramFlow/FibonacciSeries/` | `if-goto` com recursão | `cargo run -- .../FibonacciSeries/` |
+| `FunctionCalls/SimpleFunction/` | `function` / `return` | `cargo run -- .../SimpleFunction/` |
+| `FunctionCalls/NestedCall/` | bootstrap + `call`/`return` aninhados | `cargo run -- .../NestedCall/` |
+
+### Fluxo de validação
+
+```bash
+# 1. Traduza o diretório
+cargo run -- projects/08/FunctionCalls/NestedCall/
+
+# 2. Abra o CPUEmulator do Nand2Tetris
+# 3. Carregue: NestedCall.tst
+# 4. Execute — resultado esperado: "Comparison ended successfully"
+```
+
+---
+
+## Exemplo de Saída
+
+Entrada (`BasicLoop.vm`):
+```
+function Sys.init 0
+  push constant 0
+  label LOOP
+  push constant 1
+  add
+  if-goto LOOP
+```
+
+Saída (trecho do `BasicLoop.asm`):
+```asm
+// Bootstrap code
+@256
+D=A
+@SP
+M=D
+// call Sys.init 0
+...
+// function Sys.init 0
+(Sys.init)
+// push constant 0
+@0
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+// label LOOP
+(Sys.init$LOOP)
+// if-goto LOOP
+@SP
+AM=M-1
+D=M
+@Sys.init$LOOP
+D;JNE
+```
