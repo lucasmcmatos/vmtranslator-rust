@@ -66,7 +66,62 @@ impl CodeWriter {
     }
 
     pub fn write_call(&mut self, name: &str, n_args: u16) {
-        todo!("write_call not yet implemented")
+        self.output.push(format!("// call {} {}", name, n_args));
+        let ret_label = format!("{}$ret.{}", name, self.return_counter);
+        self.return_counter += 1;
+
+        // push return address
+        self.emit(&[
+            &format!("@{}", ret_label),
+            "D=A",
+            "@SP",
+            "A=M",
+            "M=D",
+            "@SP",
+            "M=M+1",
+        ]);
+
+        // push LCL, ARG, THIS, THAT (save caller frame)
+        for reg in &["LCL", "ARG", "THIS", "THAT"] {
+            self.emit(&[
+                &format!("@{}", reg),
+                "D=M",
+                "@SP",
+                "A=M",
+                "M=D",
+                "@SP",
+                "M=M+1",
+            ]);
+        }
+
+        // ARG = SP - 5 - nArgs
+        self.emit(&[
+            "@SP",
+            "D=M",
+            "@5",
+            "D=D-A",
+            &format!("@{}", n_args),
+            "D=D-A",
+            "@ARG",
+            "M=D",
+        ]);
+
+        // LCL = SP
+        self.emit(&[
+            "@SP",
+            "D=M",
+            "@LCL",
+            "M=D",
+        ]);
+
+        // goto callee
+        self.emit(&[
+            &format!("@{}", name),
+            "0;JMP",
+        ]);
+
+        // plant return address label
+        self.emit(&[&format!("({})", ret_label)]);
     }
 
     pub fn write_return(&mut self) {
@@ -343,6 +398,62 @@ mod tests {
         let out = asm(&cw);
         assert!(out.contains(&"@Main.main$LOOP"));
         assert!(out.contains(&"0;JMP"));
+    }
+
+    #[test]
+    fn test_write_call_pushes_return_address() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_call("Foo.bar", 2);
+        let out = asm(&cw);
+        assert!(out.contains(&"@Foo.bar$ret.0"));
+        assert!(out.contains(&"D=A"));
+    }
+
+    #[test]
+    fn test_write_call_saves_caller_frame() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_call("Foo.bar", 0);
+        let asm_str = cw.output().join("\n");
+        assert!(asm_str.contains("@LCL"));
+        assert!(asm_str.contains("@ARG"));
+        assert!(asm_str.contains("@THIS"));
+        assert!(asm_str.contains("@THAT"));
+    }
+
+    #[test]
+    fn test_write_call_repositions_arg() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_call("Foo.bar", 3);
+        let asm_str = cw.output().join("\n");
+        // ARG = SP - 5 - nArgs: expect @5 and @3
+        assert!(asm_str.contains("@5\nD=D-A\n@3\nD=D-A\n@ARG\nM=D"));
+    }
+
+    #[test]
+    fn test_write_call_sets_lcl_and_jumps() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_call("Foo.bar", 0);
+        let asm_str = cw.output().join("\n");
+        assert!(asm_str.contains("@LCL\nM=D"));
+        assert!(asm_str.contains("@Foo.bar\n0;JMP"));
+    }
+
+    #[test]
+    fn test_write_call_plants_return_label() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_call("Foo.bar", 0);
+        let out = asm(&cw);
+        assert!(out.contains(&"(Foo.bar$ret.0)"));
+    }
+
+    #[test]
+    fn test_write_call_return_counter_increments() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_call("Foo.bar", 0);
+        cw.write_call("Foo.bar", 0);
+        let out = asm(&cw);
+        assert!(out.contains(&"(Foo.bar$ret.0)"));
+        assert!(out.contains(&"(Foo.bar$ret.1)"));
     }
 
     #[test]
