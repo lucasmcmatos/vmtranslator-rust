@@ -24,15 +24,30 @@ impl CodeWriter {
     }
 
     pub fn write_label(&mut self, label: &str) {
-        todo!("write_label not yet implemented")
+        self.output.push(format!("// label {}", label));
+        let scoped = self.scoped_label(label);
+        self.emit(&[&format!("({})", scoped)]);
     }
 
     pub fn write_goto(&mut self, label: &str) {
-        todo!("write_goto not yet implemented")
+        self.output.push(format!("// goto {}", label));
+        let scoped = self.scoped_label(label);
+        self.emit(&[
+            &format!("@{}", scoped),
+            "0;JMP",
+        ]);
     }
 
     pub fn write_if(&mut self, label: &str) {
-        todo!("write_if not yet implemented")
+        self.output.push(format!("// if-goto {}", label));
+        let scoped = self.scoped_label(label);
+        self.emit(&[
+            "@SP",
+            "AM=M-1",
+            "D=M",
+            &format!("@{}", scoped),
+            "D;JNE",
+        ]);
     }
 
     pub fn write_function(&mut self, name: &str, n_locals: u16) {
@@ -269,9 +284,66 @@ impl CodeWriter {
         ]);
     }
 
+    fn scoped_label(&self, label: &str) -> String {
+        if self.current_function.is_empty() {
+            label.to_string()
+        } else {
+            format!("{}${}", self.current_function, label)
+        }
+    }
+
     fn emit(&mut self, lines: &[&str]) {
         for line in lines {
             self.output.push(line.to_string());
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn asm(writer: &CodeWriter) -> Vec<&str> {
+        writer.output().iter().map(|s| s.as_str()).collect()
+    }
+
+    #[test]
+    fn test_write_label_scoped() {
+        let mut cw = CodeWriter::new("Test");
+        cw.current_function = "Main.main".to_string();
+        cw.write_label("LOOP");
+        let out = asm(&cw);
+        assert!(out.contains(&"(Main.main$LOOP)"));
+    }
+
+    #[test]
+    fn test_write_label_no_function() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_label("TOP");
+        let out = asm(&cw);
+        assert!(out.contains(&"(TOP)"));
+    }
+
+    #[test]
+    fn test_write_goto_scoped() {
+        let mut cw = CodeWriter::new("Test");
+        cw.current_function = "Main.main".to_string();
+        cw.write_goto("LOOP");
+        let out = asm(&cw);
+        assert!(out.contains(&"@Main.main$LOOP"));
+        assert!(out.contains(&"0;JMP"));
+    }
+
+    #[test]
+    fn test_write_if_scoped() {
+        let mut cw = CodeWriter::new("Test");
+        cw.current_function = "Main.main".to_string();
+        cw.write_if("LOOP");
+        let out = asm(&cw);
+        assert!(out.contains(&"@SP"));
+        assert!(out.contains(&"AM=M-1"));
+        assert!(out.contains(&"D=M"));
+        assert!(out.contains(&"@Main.main$LOOP"));
+        assert!(out.contains(&"D;JNE"));
     }
 }
