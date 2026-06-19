@@ -51,7 +51,18 @@ impl CodeWriter {
     }
 
     pub fn write_function(&mut self, name: &str, n_locals: u16) {
-        todo!("write_function not yet implemented")
+        self.output.push(format!("// function {} {}", name, n_locals));
+        self.current_function = name.to_string();
+        self.emit(&[&format!("({})", name)]);
+        for _ in 0..n_locals {
+            self.emit(&[
+                "@SP",
+                "A=M",
+                "M=0",
+                "@SP",
+                "M=M+1",
+            ]);
+        }
     }
 
     pub fn write_call(&mut self, name: &str, n_args: u16) {
@@ -332,6 +343,47 @@ mod tests {
         let out = asm(&cw);
         assert!(out.contains(&"@Main.main$LOOP"));
         assert!(out.contains(&"0;JMP"));
+    }
+
+    #[test]
+    fn test_write_function_sets_current_function() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_function("Main.main", 0);
+        assert_eq!(cw.current_function, "Main.main");
+    }
+
+    #[test]
+    fn test_write_function_emits_label() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_function("Main.main", 0);
+        let out = asm(&cw);
+        assert!(out.contains(&"(Main.main)"));
+    }
+
+    #[test]
+    fn test_write_function_initializes_locals() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_function("Main.main", 2);
+        let asm_str = cw.output().join("\n");
+        // two pushes of 0: count occurrences of M=0
+        assert_eq!(asm_str.matches("M=0").count(), 2);
+    }
+
+    #[test]
+    fn test_write_function_zero_locals_no_init() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_function("Main.main", 0);
+        let asm_str = cw.output().join("\n");
+        assert!(!asm_str.contains("M=0"));
+    }
+
+    #[test]
+    fn test_write_function_scopes_subsequent_labels() {
+        let mut cw = CodeWriter::new("Test");
+        cw.write_function("Foo.bar", 0);
+        cw.write_label("LOOP");
+        let out = asm(&cw);
+        assert!(out.contains(&"(Foo.bar$LOOP)"));
     }
 
     #[test]
