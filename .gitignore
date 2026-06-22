@@ -2,3 +2,7 @@
 CLAUDE.md
 CLAUDE.md:Zone.Identifier
 enunciado.md
+
+# Generated assembly output (produced by the translator)
+tests/**/*.asm
+tests/**/*.out

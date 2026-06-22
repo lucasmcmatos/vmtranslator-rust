@@ -30,9 +30,16 @@ vmtranslator-rust/
 │   ├── parser.rs        # Leitura, remoção de comentários e tokenização
 │   └── code_writer.rs   # Geração de instruções Hack Assembly
 ├── tests/
-│   ├── *.vm             # Arquivos de teste da Parte 1
-│   └── output/          # Arquivos .asm gerados (arquivo único)
-├── translate_all.sh     # Script para traduzir todos os .vm de uma vez
+│   ├── part1/           # Testes da Parte 1 (arquivo único)
+│   │   ├── SimpleAdd/   # SimpleAdd.vm + SimpleAdd.tst + SimpleAdd.cmp
+│   │   ├── BasicTest/   # BasicTest.vm + BasicTest.tst + BasicTest.cmp
+│   │   ├── PointerTest/ # PointerTest.vm
+│   │   ├── StackTest/   # StackTest.vm
+│   │   └── StaticTest/  # StaticTest.vm
+│   └── part2/           # Testes da Parte 2 (diretórios com múltiplos .vm)
+│       ├── ProgramFlow/
+│       └── FunctionCalls/
+├── translate_all.sh     # Script para traduzir todos os testes da Parte 1
 └── Cargo.toml
 ```
 
@@ -56,11 +63,11 @@ O binário gerado fica em `target/release/vmtranslator-rust`.
 cargo run -- <caminho/para/arquivo.vm>
 ```
 
-O arquivo `.asm` é gerado em `output/` dentro do mesmo diretório do `.vm`. Bootstrap **não** é emitido.
+O arquivo `.asm` é gerado **no mesmo diretório** do `.vm` (ao lado do `.tst` e `.cmp`). Bootstrap **não** é emitido.
 
 ```bash
-cargo run -- tests/SimpleAdd.vm
-# Gera: tests/output/SimpleAdd.asm
+cargo run -- tests/part1/SimpleAdd/SimpleAdd.vm
+# Gera: tests/part1/SimpleAdd/SimpleAdd.asm
 ```
 
 ### Diretório (Parte 2)
@@ -72,8 +79,8 @@ cargo run -- <caminho/para/diretório/>
 Todos os `.vm` do diretório são traduzidos em um único `.asm`, gerado **dentro do próprio diretório**. Bootstrap (`SP = 256` + `call Sys.init 0`) é emitido automaticamente.
 
 ```bash
-cargo run -- projects/08/FunctionCalls/NestedCall/
-# Gera: projects/08/FunctionCalls/NestedCall/NestedCall.asm
+cargo run -- tests/part2/FunctionCalls/NestedCall/
+# Gera: tests/part2/FunctionCalls/NestedCall/NestedCall.asm
 ```
 
 ---
@@ -117,19 +124,19 @@ Baixe o pacote do Nand2Tetris e localize `projects/08/`.
 
 | Diretório | Foco | Comando |
 |-----------|------|---------|
-| `ProgramFlow/BasicLoop/` | `label`, `goto`, `if-goto` | `cargo run -- .../BasicLoop/` |
-| `ProgramFlow/FibonacciSeries/` | `if-goto` com recursão | `cargo run -- .../FibonacciSeries/` |
-| `FunctionCalls/SimpleFunction/` | `function` / `return` | `cargo run -- .../SimpleFunction/` |
-| `FunctionCalls/NestedCall/` | bootstrap + `call`/`return` aninhados | `cargo run -- .../NestedCall/` |
+| `tests/part2/ProgramFlow/BasicLoop/` | `label`, `goto`, `if-goto` | `cargo run -- tests/part2/ProgramFlow/BasicLoop/` |
+| `tests/part2/ProgramFlow/FibonacciSeries/` | `if-goto` com recursão | `cargo run -- tests/part2/ProgramFlow/FibonacciSeries/` |
+| `tests/part2/FunctionCalls/SimpleFunction/` | `function` / `return` | `cargo run -- tests/part2/FunctionCalls/SimpleFunction/` |
+| `tests/part2/FunctionCalls/NestedCall/` | bootstrap + `call`/`return` aninhados | `cargo run -- tests/part2/FunctionCalls/NestedCall/` |
 
 ### Fluxo de validação
 
 ```bash
 # 1. Traduza o diretório
-cargo run -- projects/08/FunctionCalls/NestedCall/
+cargo run -- tests/part2/FunctionCalls/NestedCall/
 
 # 2. Abra o CPUEmulator do Nand2Tetris
-# 3. Carregue: NestedCall.tst
+# 3. Carregue: tests/part2/FunctionCalls/NestedCall/NestedCall.tst
 # 4. Execute — resultado esperado: "Comparison ended successfully"
 ```
 
